@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NCKU 國立成功大學行動校園 App</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 Font Awesome 圖示庫 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- 載入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ncku: {
+                            DEFAULT: '#8B1D24',
+                            dark: '#631217',
+                            light: '#A92831',
+                            soft: '#FDF2F3'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Inter"', '"Noto Sans TC"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 隱藏手機畫面內部滾動條但保留滑動手感 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 擬真 iPhone 16 Pro 鈦金屬硬體外框特效 */
+        .iphone-frame {
+            width: 392px;
+            height: 844px;
+            border-radius: 56px;
+            background: #0f1115;
+            padding: 12px;
+            box-shadow:
+                0 0 0 2px #3b3f46,
+                0 0 0 5px #1c1e22,
+                0 30px 70px -15px rgba(0, 0, 0, 0.75),
+                inset 0 0 8px rgba(255, 255, 255, 0.18);
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* 內部 OLED 顯示器螢幕圓角 */
+        .iphone-screen {
+            width: 100%;
+            height: 100%;
+            border-radius: 45px;
+            overflow: hidden;
+            position: relative;
+            background: #F4F5F7;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 手機側邊實體金屬按鍵 */
+        .hw-btn-left-1 {
+            position: absolute;
+            left: -7px;
+            top: 132px;
+            width: 4px;
+            height: 28px;
+            background: linear-gradient(180deg, #4b5058, #272a30);
+            border-radius: 4px 0 0 4px;
+        }
+        .hw-btn-left-2 {
+            position: absolute;
+            left: -7px;
+            top: 182px;
+            width: 4px;
+            height: 54px;
+            background: linear-gradient(180deg, #4b5058, #272a30);
+            border-radius: 4px 0 0 4px;
+        }
+        .hw-btn-left-3 {
+            position: absolute;
+            left: -7px;
+            top: 248px;
+            width: 4px;
+            height: 54px;
+            background: linear-gradient(180deg, #4b5058, #272a30);
+            border-radius: 4px 0 0 4px;
+        }
+        .hw-btn-right {
+            position: absolute;
+            right: -7px;
+            top: 204px;
+            width: 4px;
+            height: 78px;
+            background: linear-gradient(180deg, #4b5058, #272a30);
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* 原生 App 點擊回饋動畫 */
+        .ios-tap:active {
+            transform: scale(0.95);
+            opacity: 0.85;
+        }
+
+        /* 分頁切換過渡動畫 */
+        .app-page {
+            animation: appFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes appFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 底部上滑抽屜 (Bottom Sheet) 動畫 */
+        .sheet-enter {
+            animation: sheetSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes sheetSlideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        /* 抖動編輯動畫 (類似 iOS 主畫面編輯圖示) */
+        @keyframes iconJiggle {
+            0% { transform: rotate(-1.5deg); }
+            50% { transform: rotate(1.5deg); }
+            100% { transform: rotate(-1.5deg); }
+        }
+        .jiggle-mode {
+            animation: iconJiggle 0.28s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-950 via-slate-900 to-stone-900 min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 select-none font-sans overflow-x-hidden">
+
+    <!-- 頂部模擬器環境提示列（可切換手機外框縮放或重置 App） -->
+    <div class="w-full max-w-[392px] flex items-center justify-between mb-2.5 px-3.5 py-2 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-white text-xs shadow-lg">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-semibold tracking-wide">NCKU Mobile App 模擬器</span>
+            <span class="text-[10px] bg-ncku px-2 py-0.5 rounded-full text-rose-100 font-bold">iOS 學生版</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+            <button onclick="triggerDynamicIsland('成大校園網路 NCKU-WiFi 已連線', 'fa-wifi text-emerald-400')" class="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] transition" title="測試動態島通知">
+                <i class="fa-solid fa-bell"></i>
+            </button>
+            <button onclick="resetApp()" class="px-2.5 py-1 rounded-lg bg-ncku hover:bg-ncku-light text-[11px] font-semibold transition">
+                <i class="fa-solid fa-rotate-right mr-1"></i>回首頁
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== 擬真 iPhone 16 Pro 智慧型手機硬體外框 ==================== -->
+    <div id="phoneHardware" class="iphone-frame">
+        <!-- 機身左側靜音鍵與音量鍵、右側電源鍵 -->
+        <div class="hw-btn-left-1" title="動作按鈕"></div>
+        <div class="hw-btn-left-2" title="音量 +"></div>
+        <div class="hw-btn-left-3" title="音量 -"></div>
+        <div class="hw-btn-right" title="電源鍵"></div>
+
+        <!-- 手機內部 OLED 螢幕 -->
+        <div class="iphone-screen">
+
+            <!-- 1. iOS 頂部狀態列 + 動態島 (Dynamic Island) -->
+            <div class="bg-ncku text-white pt-2.5 pb-1.5 px-6 flex items-center justify-between text-xs font-semibold relative z-40 shrink-0">
+                <!-- 左側時間 -->
+                <span id="iosStatusBarClock" class="tracking-tight font-bold text-[13px] w-14">09:41</span>
+
+                <!-- 中央動態島 (Dynamic Island - 可點擊展開即時活動) -->
+                <div id="dynamicIsland" onclick="triggerDynamicIsland('下節課：10:10 資料結構 (資訊館 65104)', 'fa-graduation-cap text-amber-300')" class="bg-black text-white h-[26px] min-w-[116px] max-w-[230px] px-3 rounded-full flex items-center justify-between gap-2 shadow-md cursor-pointer transition-all duration-300 border border-white/10">
+                    <div class="flex items-center gap-1.5 overflow-hidden">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                        <span id="islandText" class="text-[10px] text-slate-200 truncate font-medium">NCKU 學生端</span>
+                    </div>
+                    <!-- 鏡頭孔視覺 -->
+                    <div class="w-2.5 h-2.5 rounded-full bg-[#151821] border border-indigo-900/60 shrink-0"></div>
+                </div>
+
+                <!-- 右側電信訊號 / 5G / 電池圖示 -->
+                <div class="flex items-center justify-end gap-1.5 w-14 text-[11px]">
+                    <i class="fa-solid fa-signal text-[10px]"></i>
+                    <i class="fa-solid fa-wifi text-[10px]"></i>
+                    <i class="fa-solid fa-battery-full text-[13px]"></i>
+                </div>
+            </div>
+
+            <!-- 2. 原生 App 頂部導覽列 (Navigation Bar) -->
+            <header class="bg-ncku text-white px-4 pt-1 pb-3 flex items-center justify-between shadow-sm relative z-30 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center border border-white/25 shadow-inner">
+                        <i class="fa-solid fa-graduation-cap text-amber-300 text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <h1 id="appNavTitle" class="text-[15px] font-bold tracking-tight leading-none">成功大學行動校園</h1>
+                        </div>
+                        <p id="appNavSubtitle" class="text-[10px] text-rose-100/80 mt-0.5">National Cheng Kung University</p>
+                    </div>
+                </div>
+
+                <!-- 右側快速搜尋與常見問題捷徑 -->
+                <div class="flex items-center gap-1.5">
+                    <button onclick="openServiceSheet('event_system')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center ios-tap transition" title="活動資訊系統">
+                        <i class="fa-solid fa-calendar-check text-xs text-amber-300"></i>
+                    </button>
+                    <button onclick="switchTab('profile'); setTimeout(scrollToFaqSection, 120);" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center ios-tap transition" title="學生常見問題">
+                        <i class="fa-solid fa-circle-question text-xs"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- 3. 手機螢幕中央可捲動視窗 (Mobile Scroll Viewport) -->
+            <main id="phoneViewport" class="flex-1 overflow-y-auto no-scrollbar bg-[#F3F4F6] pb-24 relative">
+
+                <!-- ==================== TAB 1: 首頁 (僅含「個人資訊」與「可客製化常用校園服務」) ==================== -->
+                <section id="tab-home" class="tab-view app-page">
+                    <!-- 頂部酒紅弧形背景延伸 -->
+                    <div class="bg-ncku h-12 rounded-b-[28px] shadow-xs"></div>
+
+                    <div class="px-3.5 -mt-9 space-y-3.5">
+                        <!-- (A) 學生個人資訊卡 (顯示「在學中」，不顯示校區、不顯示通行碼與統計列) -->
+                        <div class="bg-white rounded-3xl p-4 shadow-md border border-slate-100 relative overflow-hidden">
+                            <!-- 成大榕樹裝飾浮水印 -->
+                            <i class="fa-solid fa-tree text-7xl text-ncku/[0.04] absolute -right-2 -bottom-3 pointer-events-none"></i>
+
+                            <div class="flex items-center justify-between relative z-10">
+                                <div class="flex items-center gap-3.5">
+                                    <!-- 學生頭像 -->
+                                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-ncku to-ncku-light text-white flex flex-col items-center justify-center shadow-md border-2 border-rose-100 shrink-0">
+                                        <span class="text-lg font-black leading-none">王</span>
+                                        <span class="text-[9px] text-rose-100 mt-0.5 font-mono">NCKU</span>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h2 class="text-base font-extrabold text-slate-900">王成功</h2>
+                                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>在學中
+                                            </span>
+                                        </div>
+                                        <p class="text-xs font-semibold text-slate-600 mt-1">電機資訊學院 · 資訊工程學系三年級</p>
+                                        <p class="text-[11px] text-slate-400 font-mono mt-0.5">學號：F74123456</p>
+                                    </div>
+                                </div>
+
+                                <button onclick="switchTab('profile')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-ncku flex items-center justify-center ios-tap transition shrink-0" title="檢視學生檔案">
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- (B) 常用校園服務 (可客製化新增、移除、調整順序，含「活動資訊系統」) -->
+                        <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-1.5 h-4 rounded-full bg-ncku"></span>
+                                    <div>
+                                        <h3 class="text-sm font-extrabold text-slate-800 leading-none">常用校園服務</h3>
+                                        <p id="homeServiceSubtitle" class="text-[10px] text-slate-400 mt-1">點選圖示開啟服務，或點擊右側客製化調整</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-1.5">
+                                    <button id="jiggleEditBtn" onclick="toggleHomeJiggleEdit()" class="px-2.5 py-1.5 rounded-full bg-rose-50 text-ncku font-bold text-[11px] flex items-center gap-1 ios-tap transition">
+                                        <i class="fa-solid fa-sliders text-[10px]"></i>
+                                        <span>客製化</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 編輯模式提示橫幅 (預設隱藏) -->
+                            <div id="jiggleModeBanner" class="hidden mb-3 p-2.5 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-between text-[11px] text-amber-900">
+                                <span class="font-medium"><i class="fa-solid fa-hand-pointer text-amber-600 mr-1"></i>點擊左上角「-」移除，或開服務庫新增</span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="openCustomizeBottomSheet()" class="px-2 py-1 rounded-lg bg-ncku text-white font-bold text-[10px] ios-tap">+ 服務庫</button>
+                                    <button onclick="resetDefaultServices()" class="px-2 py-1 rounded-lg bg-white border border-amber-300 text-amber-900 font-semibold text-[10px] ios-tap">還原</button>
+                                </div>
+                            </div>
+
+                            <!-- App 圖示網格 (4 欄原生手機 App Icon 排版) -->
+                            <div id="pinnedAppGrid" class="grid grid-cols-4 gap-y-4 gap-x-2 text-center pt-1">
+                                <!-- 由 JavaScript 動態渲染 -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== TAB 2: 課表 (直接顯示一週所有課程，無「進入課程」按鈕) ==================== -->
+                <section id="tab-academic" class="tab-view app-page hidden p-3 space-y-3">
+                    <!-- 頂部學期資訊與目前點選課程摘要卡 -->
+                    <div class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <h2 class="text-sm font-extrabold text-slate-800">115-1 學期一週課表</h2>
+                                <p class="text-[10px] text-slate-400">共 7 門課 · 18 學分（點擊任一課程格查看詳情）</p>
+                            </div>
+                            <span class="text-[10px] font-bold bg-ncku/10 text-ncku px-2.5 py-1 rounded-full">週一 ~ 週五</span>
+                        </div>
+
+                        <!-- 點擊課表後顯示的課程詳細資訊卡 (無「進入課程」按鈕) -->
+                        <div id="timetableSelectedCard" class="p-2.5 rounded-2xl bg-gradient-to-r from-rose-50 via-rose-50/60 to-amber-50/40 border border-rose-200/70 flex items-center justify-between">
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span id="ttCourseType" class="text-[10px] font-bold bg-ncku text-white px-1.5 py-0.5 rounded-md">必修 · 3 學分</span>
+                                    <h3 id="ttCourseTitle" class="text-xs font-extrabold text-slate-900">資料結構與演算法</h3>
+                                </div>
+                                <p id="ttCourseInfo" class="text-[11px] text-slate-600 mt-1">
+                                    <i class="fa-solid fa-location-dot text-ncku mr-1"></i>成功校區 資訊館 65104 · 林教授 · 週一 3-4 / 週四 2
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 手機版一週五天完整課表網格 (第 1 節 08:10 ~ 第 9 節 17:10) -->
+                        <div class="mt-2.5 rounded-2xl border border-slate-200 overflow-hidden">
+                            <table class="w-full table-fixed border-collapse text-center">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-700 text-[10px] font-extrabold border-b border-slate-200">
+                                        <th class="w-8 py-1.5 border-r border-slate-200 text-slate-400">節</th>
+                                        <th class="py-1.5 border-r border-slate-200">一</th>
+                                        <th class="py-1.5 border-r border-slate-200">二</th>
+                                        <th class="py-1.5 border-r border-slate-200">三</th>
+                                        <th class="py-1.5 border-r border-slate-200">四</th>
+                                        <th class="py-1.5">五</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mobileTimetableGrid" class="divide-y divide-slate-200 text-[10px]">
+                                    <!-- 由 JS 渲染第 1~9 節完整一週課表 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 本學期修課科目總覽清單 (純資訊呈現，無任何「進入課程」按鈕) -->
+                    <div class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100">
+                        <h3 class="text-xs font-extrabold text-slate-700 mb-2 flex items-center gap-1.5">
+                            <i class="fa-solid fa-book-bookmark text-ncku"></i>本學期修習科目明細
+                        </h3>
+                        <div id="mobileCourseList" class="space-y-2">
+                            <!-- 由 JS 動態渲染 -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== TAB 3: 校園 (雙區塊切換：1.地圖教室與Wi-Fi / 2.自修室圖書館與學餐販賣機) ==================== -->
+                <section id="tab-services" class="tab-view app-page hidden p-3 space-y-3">
+
+                    <!-- iOS 風格頂部分段控制器 (Segmented Control) -->
+                    <div class="bg-slate-200/90 p-1 rounded-2xl grid grid-cols-2 gap-1 shadow-inner">
+                        <button id="campusSegBtn-map" onclick="switchCampusMode('map')" class="py-2 px-2 rounded-xl text-[11px] font-extrabold bg-white text-ncku shadow-xs transition flex items-center justify-center gap-1.5 ios-tap">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                            <span>地圖教室 · Wi-Fi</span>
+                        </button>
+                        <button id="campusSegBtn-live" onclick="switchCampusMode('live')" class="py-2 px-2 rounded-xl text-[11px] font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 ios-tap">
+                            <i class="fa-solid fa-users-viewfinder"></i>
+                            <span>自修室 · 學餐販賣機</span>
+                        </button>
+                    </div>
+
+                    <!-- 區塊 (1)：互動式八大校區地圖、教室資訊、Wi-Fi 密碼 -->
+                    <div id="campusPanel-map" class="space-y-3">
+                        <div class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <div>
+                                    <h3 class="text-xs font-extrabold text-slate-800">成大八大校區互動地圖</h3>
+                                    <p class="text-[10px] text-slate-400">點選地圖上的校區查看系館教室代碼與空堂狀態</p>
+                                </div>
+                                <span id="selectedCampusPill" class="text-[10px] font-bold bg-ncku text-white px-2.5 py-0.5 rounded-full">成功校區</span>
+                            </div>
+
+                            <!-- 手機專用互動式校區平面圖 (含道路與校區區塊) -->
+                            <div class="relative w-full h-52 rounded-2xl overflow-hidden border border-slate-200 bg-[#e8f0ec] shadow-inner">
+                                <svg viewBox="0 0 340 210" class="w-full h-full">
+                                    <rect width="340" height="210" fill="#e6efe9"/>
+                                    <!-- 校區綠地底塊 (僅繪製八大校區對應位置，左下角留白) -->
+                                    <rect x="10" y="10" width="98" height="56" rx="8" fill="#d5e6da"/>
+                                    <rect x="118" y="10" width="98" height="56" rx="8" fill="#d5e6da"/>
+                                    <rect x="226" y="10" width="104" height="56" rx="8" fill="#d5e6da"/>
+                                    <rect x="10" y="76" width="98" height="64" rx="8" fill="#cde2d3"/>
+                                    <rect x="118" y="76" width="98" height="64" rx="8" fill="#cde2d3"/>
+                                    <rect x="226" y="76" width="104" height="64" rx="8" fill="#cde2d3"/>
+                                    <!-- 中間下方為勝利校區，右下方為東寧校區 -->
+                                    <rect x="118" y="150" width="98" height="50" rx="8" fill="#d5e6da"/>
+                                    <rect x="226" y="150" width="104" height="50" rx="8" fill="#d5e6da"/>
+
+                                    <!-- 道路：小東路、大學路、勝利路、長榮路 -->
+                                    <line x1="0" y1="71" x2="340" y2="71" stroke="#ffffff" stroke-width="6"/>
+                                    <line x1="0" y1="145" x2="340" y2="145" stroke="#ffffff" stroke-width="6"/>
+                                    <line x1="113" y1="0" x2="113" y2="210" stroke="#ffffff" stroke-width="6"/>
+                                    <line x1="221" y1="0" x2="221" y2="210" stroke="#ffffff" stroke-width="6"/>
+
+                                    <text x="45" y="69" font-size="6.5" fill="#64748b" font-weight="bold">小東路</text>
+                                    <text x="45" y="143" font-size="6.5" fill="#64748b" font-weight="bold">大學路</text>
+                                    <text x="105" y="38" font-size="6.5" fill="#64748b" font-weight="bold" writing-mode="tb">勝利路</text>
+                                    <text x="213" y="38" font-size="6.5" fill="#64748b" font-weight="bold" writing-mode="tb">長榮路</text>
+                                </svg>
+
+                                <!-- 八大校區互動點擊熱區按鈕 (僅顯示校區名稱) -->
+                                <button onclick="selectCampusOnMap('lixing')" id="pin-lixing" class="absolute top-2.5 left-2.5 w-[92px] h-11 rounded-xl bg-white/95 border border-slate-300 shadow-xs flex items-center justify-center ios-tap transition">
+                                    <span class="text-xs font-extrabold text-slate-700">力行校區</span>
+                                </button>
+                                <button onclick="selectCampusOnMap('chengxing')" id="pin-chengxing" class="absolute top-2.5 left-[120px] w-[92px] h-11 rounded-xl bg-white/95 border border-slate-300 shadow-xs flex items-center justify-center ios-tap transition">
+                                    <span class="text-xs font-extrabold text-slate-700">成杏校區</span>
+                                </button>
+                                <button onclick="selectCampusOnMap('jingye')" id="pin-jingye" class="absolute top-2.5 right-2.5 w-[96px] h-11 rounded-xl bg-white/95 border border-slate-300 shadow-xs flex items-center justify-center ios-tap transition">
+                                    <span class="text-xs font-extrabold text-slate-700">敬業校區</span>
+                                </button>
+
+                                <button onclick="selectCampusOnMap('kuangfu')" id="pin-kuangfu" class="absolute top-[78px] left-2.5 w-[92px] h-13 py-1.5 rounded-xl bg-white/95 border border-slate-300 shadow-xs flex items-center justify-center ios-tap transition">
+                                    <span class="text-xs font-extrabold text-slate-700">光復校區</span>
+                                </button>
+                                <button onclick="selectCampusOnMap('chengkung')" id="pin-chengkung" class="absolute top-[78px] left-[120px] w-[92px] h-13 py-1.5 rounded-xl bg-ncku text-white border-2 border-amber-300 shadow-md flex items-center justify-center ios-tap transition">
+                                    <span class="text-xs font-extrabold text-white">成功校區</span>
+                                </button>
+                                <button onclick="selectCampusOnMap('zihchiang')" id="pin-zihchiang" class="absolute top-[78px] right-2.5 w-[96px] h-13 py-1.5 rounded-xl bg-white/95 border border-slate-300 shadow-xs flex items-center justify-center ios-tap transition">
+                                    <span class="text-xs font-extrabold text-slate-700">自強校區</span>
+                                </button>
+
+                                <!-- 勝利校區僅位於正下方中間那一格 -->
+                                <button onclick="selectCampusOnMap('shengli')" id="pin-shengli" class="absolute bottom-2.5 left-[120px] w-[92px] h-10 rounded-xl bg-white/95 border border-slate-300 shadow-xs flex items-center justify-center ios-tap transition">
+                                    <span class="text-xs font-extrabold text-slate-700">勝利校區</span>
+                                </button>
+                                <button onclick="selectCampusOnMap('dongning')" id="pin-dongning" class="absolute bottom-2.5 right-2.5 w-[96px] h-10 rounded-xl bg-white/95 border border-slate-300 shadow-xs flex items-center justify-center ios-tap transition">
+                                    <span class="text-xs font-extrabold text-slate-700">東寧校區</span>
+                                </button>
+                            </div>
+
+                            <!-- 該校區的系館與教室詳細列表 -->
+                            <div class="mt-3 pt-2.5 border-t border-slate-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 id="campusClassroomTitle" class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-building-columns text-ncku"></i>
+                                        <span>成功校區：系館教室資訊</span>
+                                    </h4>
+                                    <span id="campusCodeTag" class="text-[10px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">代碼 41~68</span>
+                                </div>
+                                <div id="campusBuildingList" class="space-y-2">
+                                    <!-- 由 JS 渲染 -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 校園 Wi-Fi 密碼與一鍵複製卡 (已移除多餘標籤與覆蓋範圍副標) -->
+                        <div class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                        <i class="fa-solid fa-wifi text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xs font-extrabold text-slate-800">校區 Wi-Fi 密碼與快速認證</h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Wi-Fi 1: NCKU-WiFi / eduroam -->
+                            <div class="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-2">
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-xs font-extrabold text-slate-800">NCKU-WiFi / eduroam</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">帳號：<code class="font-mono text-slate-700 font-semibold">F74123456@ncku.edu.tw</code></p>
+                                    <p class="text-[10px] text-slate-500">密碼：<strong class="text-ncku">同成功入口 (Portal) 密碼</strong></p>
+                                </div>
+                                <button onclick="copyToClipboard('F74123456@ncku.edu.tw', '已複製 Wi-Fi 登入帳號')" class="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-[10px] font-bold text-slate-700 ios-tap shrink-0 shadow-2xs">
+                                    複製帳號
+                                </button>
+                            </div>
+
+                            <!-- Wi-Fi 2: 教室公用 Wi-Fi 密碼 -->
+                            <div class="p-2.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center justify-between gap-2">
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-xs font-extrabold text-slate-800">NCKU-Classroom</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-600 mt-0.5">通用密碼：<code class="font-mono font-extrabold text-ncku">ncku1931wifi</code></p>
+                                    <p class="text-[9px] text-slate-400">適用各校區階梯教室、講堂與討論室無線投影</p>
+                                </div>
+                                <button onclick="copyToClipboard('ncku1931wifi', '已複製教室 Wi-Fi 密碼：ncku1931wifi')" class="px-2.5 py-1.5 rounded-xl bg-ncku text-white text-[10px] font-bold ios-tap shrink-0 shadow-xs">
+                                    複製密碼
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 區塊 (2)：條列式呈現「自修室與圖書館即時人數」、「學餐情況」、「販賣機狀態」 -->
+                    <div id="campusPanel-live" class="hidden space-y-3">
+                        <!-- 1. 自修室與圖書館即時人數 -->
+                        <div class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100">
+                            <div class="flex items-center justify-between mb-2.5">
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-book-open-reader text-ncku text-xs"></i>
+                                    <h3 class="text-xs font-extrabold text-slate-800">圖書館與自修室即時人數</h3>
+                                </div>
+                                <button onclick="refreshLiveCampusData()" class="text-[10px] font-bold text-ncku bg-rose-50 px-2 py-1 rounded-full ios-tap">
+                                    <i class="fa-solid fa-arrows-rotate mr-0.5"></i>即時刷新
+                                </button>
+                            </div>
+                            <div id="liveStudyRoomsContainer" class="space-y-2.5">
+                                <!-- 由 JS 動態渲染 -->
+                            </div>
+                        </div>
+
+                        <!-- 2. 學生餐廳營業與排隊狀況 -->
+                        <div class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100">
+                            <div class="flex items-center justify-between mb-2.5">
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-utensils text-amber-600 text-xs"></i>
+                                    <h3 class="text-xs font-extrabold text-slate-800">學生餐廳即時人流與櫃位</h3>
+                                </div>
+                                <span class="text-[10px] text-slate-400">支援行動支付</span>
+                            </div>
+                            <div id="liveCafeteriaContainer" class="space-y-2">
+                                <!-- 由 JS 動態渲染 -->
+                            </div>
+                        </div>
+
+                        <!-- 3. 校園智慧販賣機存貨與機況 -->
+                        <div class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100">
+                            <div class="flex items-center justify-between mb-2.5">
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-bottle-water text-emerald-600 text-xs"></i>
+                                    <h3 class="text-xs font-extrabold text-slate-800">校園智慧販賣機即時情況</h3>
+                                </div>
+                                <span class="text-[10px] text-slate-400">悠遊卡 / 一卡通 / LINE Pay</span>
+                            </div>
+                            <div id="liveVendingContainer" class="space-y-2">
+                                <!-- 由 JS 動態渲染 -->
+                            </div>
+                        </div>
+                    </div>
+
+                </section>
+
+                <!-- ==================== TAB 4: 通知 (學生個人推播通知) ==================== -->
+                <section id="tab-messages" class="tab-view app-page hidden p-3 space-y-2.5">
+                    <div class="flex items-center justify-between px-1">
+                        <h2 class="text-sm font-extrabold text-slate-800">校園推播通知</h2>
+                        <button onclick="showToast('所有通知已標示為已讀')" class="text-[11px] text-ncku font-bold ios-tap">全部標為已讀</button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-3.5 shadow-xs border-l-4 border-ncku flex gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-rose-50 text-ncku flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-laptop-code text-xs"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-extrabold text-slate-800">Moodle 作業繳交提醒</span>
+                                <span class="text-[10px] text-slate-400">10 分鐘前</span>
+                            </div>
+                            <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">「資料結構與演算法」Homework #2 將於今晚 23:59 截止，請確認已上傳程式碼壓縮檔。</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-3.5 shadow-xs border-l-4 border-amber-500 flex gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-calendar-check text-xs"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-extrabold text-slate-800">活動資訊系統錄取通知</span>
+                                <span class="text-[10px] text-slate-400">2 小時前</span>
+                            </div>
+                            <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">您報名的「生成式 AI 與智慧醫療跨域論壇（通識認證講座）」已正取，請攜帶學生證刷卡入場。</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-3.5 shadow-xs border-l-4 border-blue-500 flex gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-book text-xs"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-extrabold text-slate-800">總圖書館預約書到館通知</span>
+                                <span class="text-[10px] text-slate-400">昨天 17:40</span>
+                            </div>
+                            <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">您預約之《Clean Architecture 整潔架構》已送達總圖 1F 取書區，保留至本週五閉館前。</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-3.5 shadow-xs border-l-4 border-emerald-500 flex gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-box-open text-xs"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-extrabold text-slate-800">勝利校區宿舍包裹到件</span>
+                                <span class="text-[10px] text-slate-400">昨天 14:15</span>
+                            </div>
+                            <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">您有一件掛號包裹已送達勝一舍管理室，請憑學生證領取。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== TAB 5: 我的 (學生設定 + 22 個常見問題與解答 FAQ) ==================== -->
+                <section id="tab-profile" class="tab-view app-page hidden p-3 space-y-3">
+                    <!-- 學生個人簡歷卡 -->
+                    <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 flex items-center gap-3.5">
+                        <div class="w-14 h-14 rounded-2xl bg-ncku text-white font-black text-xl flex items-center justify-center shadow-sm shrink-0">
+                            成
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <h3 class="text-sm font-extrabold text-slate-900">王成功 同學</h3>
+                                <span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">在學中</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5 truncate">資訊工程學系 三年級 · F74123456</p>
+                            <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">f74123456@gs.ncku.edu.tw</p>
+                        </div>
+                    </div>
+
+                    <!-- 快速設定列表 -->
+                    <div class="bg-white rounded-3xl divide-y divide-slate-100 shadow-sm border border-slate-100 text-xs overflow-hidden">
+                        <button onclick="openCustomizeBottomSheet()" class="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 ios-tap transition">
+                            <span class="flex items-center gap-2.5 font-bold text-slate-700">
+                                <i class="fa-solid fa-sliders text-ncku w-4 text-center"></i>客製化首頁常用服務
+                            </span>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                        </button>
+                        <button onclick="scrollToFaqSection()" class="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 ios-tap transition">
+                            <span class="flex items-center gap-2.5 font-bold text-slate-700">
+                                <i class="fa-solid fa-circle-question text-ncku w-4 text-center"></i>成大學生常見問題 (FAQ)
+                            </span>
+                            <span class="text-[10px] font-bold bg-rose-50 text-ncku px-2 py-0.5 rounded-full">22 題完整收錄</span>
+                        </button>
+                    </div>
+
+                    <!-- 學生常見問題 (FAQ) 完整 22 題問答區塊 -->
+                    <div id="studentFaqCard" class="bg-white rounded-3xl p-3.5 shadow-sm border border-slate-100 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-comments text-ncku"></i>學生常見問題與解答 (22 題)
+                                </h3>
+                                <p class="text-[10px] text-slate-400 mt-0.5">點擊問題即可展開詳細辦理流程與解答</p>
+                            </div>
+                            <button onclick="toggleExpandAllFaq()" id="expandAllFaqBtn" class="text-[10px] font-bold text-ncku bg-rose-50 px-2.5 py-1 rounded-full ios-tap">
+                                全部展開
+                            </button>
+                        </div>
+
+                        <!-- 關鍵字搜尋列 -->
+                        <div class="flex items-center bg-slate-100 rounded-2xl px-3 py-2">
+                            <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs mr-2"></i>
+                            <input id="faqSearchInput" oninput="renderFaqList()" type="text" placeholder="搜尋問題（如：加簽、Wi-Fi、自修室、退選、停車證）..." class="bg-transparent text-xs w-full focus:outline-none text-slate-800">
+                        </div>
+
+                        <!-- 分類膠囊按鈕 -->
+                        <div id="faqCatContainer" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                            <!-- 由 JS 渲染 -->
+                        </div>
+
+                        <!-- 22 題問答折疊列表 -->
+                        <div id="faqListContainer" class="space-y-2">
+                            <!-- 由 JS 渲染 22 個問題與答案 -->
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- 4. 原生手機底部五分頁導覽列 (首頁、課表、校園、通知、我的) -->
+            <nav class="absolute bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 px-2 pt-1.5 pb-6 flex justify-around items-center z-30">
+                <button onclick="switchTab('home')" id="nav-home" class="nav-btn flex flex-col items-center justify-center w-14 text-ncku ios-tap transition">
+                    <i class="fa-solid fa-house text-[17px]"></i>
+                    <span class="text-[10px] font-extrabold mt-0.5">首頁</span>
+                </button>
+                <button onclick="switchTab('academic')" id="nav-academic" class="nav-btn flex flex-col items-center justify-center w-14 text-slate-400 ios-tap transition">
+                    <i class="fa-solid fa-calendar-days text-[17px]"></i>
+                    <span class="text-[10px] font-semibold mt-0.5">課表</span>
+                </button>
+                <button onclick="switchTab('services')" id="nav-services" class="nav-btn flex flex-col items-center justify-center w-14 text-slate-400 ios-tap transition">
+                    <i class="fa-solid fa-map-location-dot text-[17px]"></i>
+                    <span class="text-[10px] font-semibold mt-0.5">校園</span>
+                </button>
+                <button onclick="switchTab('messages')" id="nav-messages" class="nav-btn relative flex flex-col items-center justify-center w-14 text-slate-400 ios-tap transition">
+                    <i class="fa-solid fa-bell text-[17px]"></i>
+                    <span class="text-[10px] font-semibold mt-0.5">通知</span>
+                    <span class="w-2 h-2 bg-ncku rounded-full absolute top-0 right-3.5 border border-white"></span>
+                </button>
+                <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex flex-col items-center justify-center w-14 text-slate-400 ios-tap transition">
+                    <i class="fa-solid fa-user text-[17px]"></i>
+                    <span class="text-[10px] font-semibold mt-0.5">我的</span>
+                </button>
+            </nav>
+
+            <!-- 5. 手機內部上滑抽屜 1：客製化常用校園服務 (Bottom Sheet) -->
+            <div id="customizeSheet" class="hidden absolute inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end">
+                <div class="bg-white w-full max-h-[82%] rounded-t-[32px] p-4 flex flex-col shadow-2xl sheet-enter">
+                    <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-2.5 shrink-0"></div>
+                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 shrink-0">
+                        <div>
+                            <h3 class="text-sm font-extrabold text-slate-800">客製化首頁常用校園服務</h3>
+                            <p class="text-[10px] text-slate-400">自由調整順序、移除或從成大服務庫新增捷徑</p>
+                        </div>
+                        <button onclick="closeSheet('customizeSheet')" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center ios-tap">
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                        </button>
+                    </div>
+
+                    <div class="overflow-y-auto no-scrollbar flex-1 py-3 space-y-4">
+                        <!-- 已釘選於首頁 -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-extrabold text-slate-700">目前首頁服務 (<span id="sheetPinnedCount">0</span>)</span>
+                                <button onclick="resetDefaultServices()" class="text-[10px] text-ncku font-bold">還原預設</button>
+                            </div>
+                            <div id="sheetPinnedList" class="space-y-1.5"></div>
+                        </div>
+
+                        <!-- 成大服務庫可新增項目 -->
+                        <div>
+                            <span class="text-xs font-extrabold text-slate-700 block mb-2">成大校園服務庫（點擊「+ 加入」釘選）</span>
+                            <div id="sheetAvailableList" class="grid grid-cols-2 gap-2"></div>
+                        </div>
+
+                        <!-- 自訂專屬服務捷徑 -->
+                        <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                            <span class="text-xs font-extrabold text-slate-700 block">新增自訂服務名稱</span>
+                            <div class="flex gap-2">
+                                <input id="customSvcInput" type="text" maxlength="8" placeholder="例如：系館門禁、實驗室預約..." class="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-ncku">
+                                <button onclick="addCustomUserService()" class="px-3 py-1.5 bg-ncku text-white rounded-xl text-xs font-bold ios-tap shrink-0">新增</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="closeSheet('customizeSheet')" class="w-full py-2.5 bg-ncku text-white rounded-2xl font-bold text-xs shadow-sm ios-tap shrink-0">
+                        完成並返回首頁
+                    </button>
+                </div>
+            </div>
+
+            <!-- 6. 手機內部上滑抽屜 2：單一校園服務互動預覽（含「活動資訊系統」完整報名畫面） -->
+            <div id="servicePreviewSheet" class="hidden absolute inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end">
+                <div class="bg-white w-full max-h-[82%] rounded-t-[32px] p-4 flex flex-col shadow-2xl sheet-enter">
+                    <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-2.5 shrink-0"></div>
+                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 shrink-0">
+                        <div class="flex items-center gap-2.5">
+                            <div id="sheetSvcIcon" class="w-9 h-9 rounded-2xl bg-rose-50 text-ncku flex items-center justify-center">
+                                <i class="fa-solid fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <h3 id="sheetSvcTitle" class="text-sm font-extrabold text-slate-800">活動資訊系統</h3>
+                                <p id="sheetSvcSub" class="text-[10px] text-slate-400">成大單一簽入 SSO 已認證</p>
+                            </div>
+                        </div>
+                        <button onclick="closeSheet('servicePreviewSheet')" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center ios-tap">
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                        </button>
+                    </div>
+
+                    <div id="sheetSvcBody" class="overflow-y-auto no-scrollbar flex-1 py-3 text-xs text-slate-600 space-y-3">
+                        <!-- 由 JS 動態填入對應服務內容 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. 手機螢幕內部輕量 Toast 通知 -->
+            <div id="phoneToast" class="pointer-events-none opacity-0 transition-all duration-300 absolute bottom-20 inset-x-6 bg-slate-900/95 text-white text-xs px-4 py-2.5 rounded-2xl shadow-xl flex items-center justify-center gap-2 z-50 text-center">
+                <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                <span id="phoneToastText">操作成功</span>
+            </div>
+
+            <!-- 8. iOS 底部 Home 橫條 (Home Indicator) -->
+            <div class="absolute bottom-1.5 inset-x-0 flex justify-center pointer-events-none z-40">
+                <div class="w-32 h-1 bg-slate-900/25 rounded-full"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 官方 Moodle Logo SVG (橘色 m 字母搭配黑色學士帽與流蘇)
+        function getServiceIconHtml(svc, sizeClass = 'text-lg') {
+            if (svc.id === 'moodle') {
+                const svgDim = sizeClass === 'text-xs' ? 'w-5 h-5' : 'w-8 h-8';
+                return `
+                    <svg viewBox="0 0 64 64" class="${svgDim}" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Moodle Logo">
+                        <!-- 橘色 Moodle 小寫 m 主體 -->
+                        <path d="M12 49V29.5C12 25.5 14.8 23 18.5 23C21.8 23 24.4 24.8 25.4 27.8C26.7 24.7 29.6 23 33.2 23C37.5 23 40.5 25.8 40.5 30.5V49H33.8V31.5C33.8 29.3 32.6 28 30.6 28C28.6 28 27.3 29.4 27.3 31.6V49H20.7V31.5C20.7 29.3 19.5 28 17.5 28C15.5 28 14.2 29.4 14.2 31.6V49H12Z" fill="#F98012" stroke="#F98012" stroke-width="2.2" stroke-linejoin="round" transform="translate(8, 2)"/>
+                        <!-- 左上角黑色學士帽 (Mortarboard) -->
+                        <polygon points="6,20 23,12 38,18 21,26" fill="#1E293B"/>
+                        <path d="M13 22.5V28.5C13 30 17 31.5 21.5 31.5C26 31.5 29.5 30 29.5 28.5V22" fill="#334155"/>
+                        <!-- 學士帽金橘色流蘇 -->
+                        <path d="M22 19L10 24.5V31" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="10" cy="31.5" r="1.8" fill="#F59E0B"/>
+                    </svg>
+                `;
+            }
+            return `<i class="fa-solid ${svc.icon} ${sizeClass}"></i>`;
+        }
+
+        // ==================== 1. 首頁可客製化「常用校園服務」資料模型 ====================
+        const defaultServices = [
+            { id: 'moodle', name: 'Moodle', icon: 'fa-graduation-cap', bg: 'bg-orange-50', color: 'text-[#F98012]', desc: '數位學習課程講義與作業繳交', pinned: true },
+            { id: 'portal', name: '成功入口', icon: 'fa-id-card-clip', bg: 'bg-amber-50', color: 'text-amber-600', desc: 'NCKU Portal 單一簽入系統', pinned: true },
+            { id: 'event_system', name: '活動資訊系統', icon: 'fa-calendar-check', bg: 'bg-purple-50', color: 'text-purple-600', desc: '全校演講、通識認證講座與工作坊報名', pinned: true },
+            { id: 'timetable', name: '課表查詢', icon: 'fa-table-list', bg: 'bg-blue-50', color: 'text-blue-600', desc: '直接檢視一週完整必修選修課表', pinned: true },
+            { id: 'library', name: '圖書館/自修', icon: 'fa-book-open-reader', bg: 'bg-emerald-50', color: 'text-emerald-600', desc: '總圖與自修室即時人數及館藏查詢', pinned: true },
+            { id: 'map', name: '校區地圖', icon: 'fa-map-location-dot', bg: 'bg-cyan-50', color: 'text-cyan-600', desc: '八大校區教室代碼與校園 Wi-Fi 密碼', pinned: true },
+            { id: 'grades', name: '成績查詢', icon: 'fa-award', bg: 'bg-indigo-50', color: 'text-indigo-600', desc: '學期成績單、GPA 與排名查詢', pinned: true },
+            { id: 'food', name: '學餐與販賣機', icon: 'fa-utensils', bg: 'bg-orange-50', color: 'text-orange-600', desc: '各校區學餐人流與智慧販賣機存貨', pinned: true },
+            // 服務庫備選服務（預設未釘選，可由使用者自由加入）
+            { id: 'enrollment', name: '選課系統', icon: 'fa-list-check', bg: 'bg-teal-50', color: 'text-teal-600', desc: '網路加退選、志願序登記與特殊加簽', pinned: false },
+            { id: 'dorm', name: '宿舍報修', icon: 'fa-screwdriver-wrench', bg: 'bg-lime-50', color: 'text-lime-700', desc: '宿舍水電報修與冷氣電費線上儲值', pinned: false },
+            { id: 'scholarship', name: '獎助學金', icon: 'fa-hand-holding-dollar', bg: 'bg-yellow-50', color: 'text-yellow-700', desc: '校內外獎學金申請與工讀媒合', pinned: false },
+            { id: 'counseling', name: '心輔預約', icon: 'fa-heart-pulse', bg: 'bg-pink-50', color: 'text-pink-600', desc: '心理健康與諮商輔導組初談預約', pinned: false }
+        ];
+
+        let appServices = JSON.parse(JSON.stringify(defaultServices));
+        let isJiggleMode = false;
+
+        // ==================== 2. 一週完整課表資料 (週一至週五，第 1~8 節，已移除第 9 節並更新時間) ====================
+        const periodSlots = [
+            { p: 1, time: '08:00' },
+            { p: 2, time: '09:00' },
+            { p: 3, time: '10:10' },
+            { p: 4, time: '11:10' },
+            { p: 5, time: '13:10' },
+            { p: 6, time: '14:10' },
+            { p: 7, time: '15:20' },
+            { p: 8, time: '16:20' }
+        ];
+
+        const weeklyCourses = [
+            {
+                id: 'c1',
+                name: '工程數學(一)',
+                short: '工程數學',
+                room: '自強 機械館 91201',
+                code: '91201',
+                teacher: '陳教授',
+                type: '必修 · 3 學分',
+                timeText: '週一 2 / 週三 1-2',
+                style: 'bg-rose-100 text-ncku border-rose-300',
+                cells: [{ d: 1, p: 2 }, { d: 3, p: 1 }, { d: 3, p: 2 }]
+            },
+            {
+                id: 'c2',
+                name: '資料結構與演算法',
+                short: '資料結構',
+                room: '成功 資訊館 65104',
+                code: '65104',
+                teacher: '林教授',
+                type: '必修 · 3 學分',
+                timeText: '週一 3-4 / 週四 2',
+                style: 'bg-amber-100 text-amber-900 border-amber-300',
+                cells: [{ d: 1, p: 3 }, { d: 1, p: 4 }, { d: 4, p: 2 }]
+            },
+            {
+                id: 'c3',
+                name: '作業系統',
+                short: '作業系統',
+                room: '成功 資訊館 65203',
+                code: '65203',
+                teacher: '張教授',
+                type: '必修 · 3 學分',
+                timeText: '週二 2-4',
+                style: 'bg-blue-100 text-blue-900 border-blue-300',
+                cells: [{ d: 2, p: 2 }, { d: 2, p: 3 }, { d: 2, p: 4 }]
+            },
+            {
+                id: 'c4',
+                name: '計算機組織',
+                short: '計算機組織',
+                room: '成功 資訊館 65101',
+                code: '65101',
+                teacher: '郭教授',
+                type: '必修 · 3 學分',
+                timeText: '週三 6-7 / 週五 3',
+                style: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+                cells: [{ d: 3, p: 6 }, { d: 3, p: 7 }, { d: 5, p: 3 }]
+            },
+            {
+                id: 'c5',
+                name: '台南歷史與文化資產',
+                short: '台南歷史',
+                room: '光復 唯農樓 7203',
+                code: '7203',
+                teacher: '黃教授',
+                type: '通識 · 2 學分',
+                timeText: '週一 6-7',
+                style: 'bg-purple-100 text-purple-900 border-purple-300',
+                cells: [{ d: 1, p: 6 }, { d: 1, p: 7 }]
+            },
+            {
+                id: 'c6',
+                name: '深度學習實務與應用',
+                short: '深度學習',
+                room: '自強 電機館 92105',
+                code: '92105',
+                teacher: '吳教授',
+                type: '選修 · 3 學分',
+                timeText: '週四 6-8',
+                style: 'bg-cyan-100 text-cyan-900 border-cyan-300',
+                cells: [{ d: 4, p: 6 }, { d: 4, p: 7 }, { d: 4, p: 8 }]
+            },
+            {
+                id: 'c7',
+                name: '大三體育（羽球）',
+                short: '體育羽球',
+                room: '光復 中正堂羽球場',
+                code: '中正堂',
+                teacher: '周老師',
+                type: '必修 · 1 學分',
+                timeText: '週五 7-8',
+                style: 'bg-lime-100 text-lime-900 border-lime-300',
+                cells: [{ d: 5, p: 7 }, { d: 5, p: 8 }]
+            }
+        ];
+
+        // ==================== 3. 八大校區地圖、系館教室資料 ====================
+        const campusData = {
+            chengkung: {
+                name: '成功校區',
+                codeTag: '館號 41~68',
+                buildings: [
+                    { bName: '資訊工程系館 (代碼 65)', rooms: '65101 講堂、65104 階梯教室、65203 電腦室', status: '4 間空堂教室可用' },
+                    { bName: '總圖書館 (代碼 50)', rooms: 'B1 坤煌自修室、1F 數位學習區、2F~4F 討論室', status: '討論室尚有 3 間可借' },
+                    { bName: '格致堂 / 物理系館 (代碼 48)', rooms: '格致堂大講堂、48102 普物階梯教室', status: '正常開放上課中' }
+                ]
+            },
+            kuangfu: {
+                name: '光復校區',
+                codeTag: '館號 51~76',
+                buildings: [
+                    { bName: '唯農大樓 (代碼 72)', rooms: '7201 ~ 7208 通識綜合大教室', status: '5 間空堂教室開放' },
+                    { bName: '管理學院大樓 (代碼 62)', rooms: '62101 個案教室、62205 研討室', status: '2 間空堂教室可用' },
+                    { bName: '雲平大樓 (行政大樓)', rooms: '註冊組、課務組、生輔組、心輔組', status: '櫃台服務至 17:00' }
+                ]
+            },
+            zihchiang: {
+                name: '自強校區',
+                codeTag: '館號 91~95',
+                buildings: [
+                    { bName: '機械工程系館 (代碼 91)', rooms: '91101 三星講堂、91201 ~ 91305 教室', status: '6 間空堂教室可用' },
+                    { bName: '電機系館 / 奇美樓 (代碼 92)', rooms: '92105 遠距教室、92B1 繁城講堂', status: '3 間空堂教室可用' },
+                    { bName: '化工系館 (代碼 93)', rooms: '93102、93204 階梯教室', status: '正常開放' }
+                ]
+            },
+            lixing: {
+                name: '力行校區',
+                codeTag: '館號 80~89',
+                buildings: [
+                    { bName: '社會科學院大樓 (代碼 80)', rooms: '80101 國際演講廳、80203 實習法庭', status: '4 間空堂教室可用' },
+                    { bName: '生科大樓 (代碼 89)', rooms: '891S1 演講廳、89201 實驗室', status: '正常開放' }
+                ]
+            },
+            chengxing: {
+                name: '成杏校區',
+                codeTag: '館號 81~85',
+                buildings: [
+                    { bName: '醫學院基礎醫學大樓 (代碼 81)', rooms: '第一~第四講堂、3F TBL 互動教室', status: '第三講堂演講進行中' },
+                    { bName: '崑巖醫學圖書分館 (代碼 85)', rooms: '2F 閱覽室、團體討論室', status: '空位充足' }
+                ]
+            },
+            shengli: {
+                name: '勝利校區',
+                codeTag: '宿舍群與K館',
+                buildings: [
+                    { bName: '勝利校區 K 館 (勝八舍 B1)', rooms: '24H 個人對號閱覽區、討論室', status: '冷氣開放 · 刷學生證入場' },
+                    { bName: '芸青軒 (第二學生活動中心)', rooms: 'B1 綜合排練室、1F 社團空間', status: '正常開放預約' }
+                ]
+            },
+            jingye: {
+                name: '敬業校區',
+                codeTag: '宿舍與學餐',
+                buildings: [
+                    { bName: '敬業一舍 / 二舍自習空間', rooms: '1F 公共交誼自習廳', status: '住宿生刷卡開放中' }
+                ]
+            },
+            dongning: {
+                name: '東寧校區',
+                codeTag: '東寧宿舍區',
+                buildings: [
+                    { bName: '東寧智慧宿舍共學室', rooms: '1F 創客交誼廳、2F 靜音自習室', status: '目前空位充裕' }
+                ]
+            }
+        };
+
+        // ==================== 4. 自修室/圖書館人數、學餐、販賣機即時資料 ====================
+        let studyRoomsState = [
+            { name: '總圖書館 (1F~6F 閱覽區)', area: '成功校區', cur: 418, max: 650, hours: '08:00-22:00', info: '3F、4F 靠窗插座區尚有空位' },
+            { name: '總圖 B1 坤煌自修室', area: '成功校區', cur: 192, max: 220, hours: '24H 開放', info: '剩餘 28 席，請於 B1 入場機台刷學生證選位' },
+            { name: '勝利校區 K 館 (勝八舍 B1)', area: '勝利校區', cur: 76, max: 160, hours: '24H 開放', info: '獨立隔板座位充足，冷氣開放中' },
+            { name: '崑巖醫學圖書分館', area: '成杏校區', cur: 58, max: 140, hours: '08:20-21:30', info: '2F 個人研究座與沙發區空位多' },
+            { name: '資訊系館系 K (65B1)', area: '成功校區', cur: 21, max: 45, hours: '08:00-23:00', info: '本系學生刷卡進入，插座充足' }
+        ];
+
+        const cafeteriasState = [
+            { name: '光復學生餐廳 (光復 B1)', area: '光復校區', status: '營業中 · 免排隊', badge: 'bg-emerald-100 text-emerald-800', detail: '自助餐、日式丼飯、素食坊、手搖飲皆正常供應' },
+            { name: '敬業一餐廳 (敬一舍 1F)', area: '敬業校區', status: '營業中 · 空位多', badge: 'bg-emerald-100 text-emerald-800', detail: '鐵板燒、鍋燒意麵、早午餐、現打果汁營業中' },
+            { name: '醫護大樓餐廳 (成杏 B1)', area: '成杏校區', status: '人潮較多 (約等5分)', badge: 'bg-amber-100 text-amber-900', detail: '健康低GI餐盒、排骨飯、麵食館與超商熱食區' },
+            { name: '勝利書城複合餐飲區', area: '勝利校區', status: '營業中 · 座位充裕', badge: 'bg-emerald-100 text-emerald-800', detail: '7-ELEVEN 鮮食區、路易莎咖啡、烘焙輕食' }
+        ];
+
+        const vendingState = [
+            { name: '總圖 B1 自修室入口智慧鮮食機', status: '庫存充足', badge: 'bg-emerald-100 text-emerald-800', detail: '飯糰、三明治、無糖茶飲、能量飲齊全（1小時前補貨）' },
+            { name: '唯農大樓 1F 走廊冷熱飲販賣機', status: '正常供應', badge: 'bg-emerald-100 text-emerald-800', detail: '礦泉水、運動飲料、罐裝咖啡存量 > 85%' },
+            { name: '自強機械館 1F 零食飲料雙機', status: '熱銷品部分售罄', badge: 'bg-amber-100 text-amber-900', detail: '泡麵與巧克力售完，茶飲與蘇打餅乾尚有庫存' },
+            { name: '勝利一舍交誼廳宵夜泡麵機', status: '今日剛補滿', badge: 'bg-emerald-100 text-emerald-800', detail: '碗裝泡麵、鋁箔包飲品、零嘴充足' },
+            { name: '資訊系館 2F 茶水間自動販賣機', status: '補貨作業中', badge: 'bg-blue-100 text-blue-800', detail: '廠商現場補貨中，預計 10 分鐘後恢復感應購買' }
+        ];
+
+        // ==================== 5. 學生常見問題 (22 題完整問答) ====================
+        const studentFaqs = [
+            { id: 1, cat: '網路與IT', q: '1. 如何連上校園無線網路 NCKU-WiFi 與 eduroam？', a: '請選擇 SSID「NCKU-WiFi」或「eduroam」，採用 802.1X EAP 驗證，帳號輸入「學號@ncku.edu.tw」（如 F74123456@ncku.edu.tw），密碼同「成功入口」密碼。設定一次即可在八大校區自動連線。' },
+            { id: 2, cat: '網路與IT', q: '2. 忘記成功入口 (NCKU Portal) 密碼該如何重設？', a: '請於成功入口登入頁點擊「忘記密碼」透過備用信箱或手機驗證重設；若無法線上重設，請持學生證親洽成功校區「計算機與網路中心 1F 服務台」辦理。' },
+            { id: 3, cat: '教務選課', q: '3. 特殊加簽（額滿加簽、超修、跨系選課）如何辦理？', a: '開學加退選期間，若課程額滿請至選課系統產生「特殊因素選課申請單（加簽單）」或透過線上加簽系統，經授課教師簽核同意後，於期限內送交開課系辦登錄。' },
+            { id: 4, cat: '教務選課', q: '4. 成大 5 碼教室代碼（如 65104、7203）怎麼看？', a: '前 2 碼為「系館建築編號」，第 3 碼為「樓層」，後 2 碼為「教室號」。例如 65104 代表：65（資訊系館）1 樓 04 室；7203 代表唯農大樓（72）2 樓 03 室。可於本 App「校園」地圖直接查詢。' },
+            { id: 5, cat: '圖書自修', q: '5. 總圖 B1 坤煌自修室如何劃位？可以暫離多久？', a: '總圖 B1 自修室 24 小時開放，入場前請於入口觸控選位機刷學生證對號入座。臨時離開請刷「暫離」（保留座位 60 分鐘），結束自習務必刷「離席」以免違規記點暫停權限。' },
+            { id: 6, cat: '教務選課', q: '6. 如何申請中英文在學證明與歷年成績單？', a: '在學證明可於「成功入口 -> 在學證明列印」免費下載防偽 PDF；紙本中英文成績單與排名證明，可持學生證與悠遊卡至雲平大樓西棟 1F 自動化繳費列印機隨到隨印。' },
+            { id: 7, cat: '教務選課', q: '7. 期中棄選（退選）科目有什麼限制与期限？', a: '每學期期中考後至第 12 週開放線上辦理棄選。棄選後仍須符合每學期最低學分下限（大一至大三 16 學分、大四 9 學分），成績單會註記「W」，不計入 GPA。' },
+            { id: 8, cat: '網路與IT', q: '8. 校園授權軟體（Office 365、Windows、MATLAB）如何下載？', a: '請登入「計網中心校園授權軟體網」，使用成功入口帳密即可免費下載 Windows、Office、MATLAB、SPSS、EndNote 等；在校外進行 KMS 認證請先連線 NCKU SSL VPN。' },
+            { id: 9, cat: '住宿生活', q: '9. 學生宿舍設備損壞報修與冷氣電費如何儲值？', a: '硬體損壞請至「住服組線上報修系統」填單；宿舍冷氣全面採用「線上電費儲值系統」或自動繳費機儲值，手機即可隨時查看寢室剩餘電量度數。' },
+            { id: 10, cat: '住宿生活', q: '10. 校園學生機車停車證如何申請？可以騎進校區嗎？', a: '每學年初於「車輛管理系統」線上申請並完成交安測驗。成大各校區內部教學區全面禁止機車通行，請停放於校區外圍指定地下或立體機車停車場。' },
+            { id: 11, cat: '住宿生活', q: '11. 下課只有 10 分鐘要跨校區（如光復到自強）怎麼移動最快？', a: '各校區校門口與周邊皆設有密集的「YouBike 2.0 公共自行車」，持學生證一卡通/悠遊卡綁定台南市民卡享前 30 分鐘優惠，光復騎至自強約 5~6 分鐘即可抵達。' },
+            { id: 12, cat: '行政獎助', q: '12. 學生證遺失如何掛失補發？裡面的悠遊卡餘額怎麼辦？', a: '請先至「成功入口 -> 校園卡管理系統」線上掛失，再到雲平大樓自動繳費機繳交 200 元工本費並至註冊組領新卡。記名悠遊卡掛失 3 小時後之餘額會退回指定帳戶。' },
+            { id: 13, cat: '教務選課', q: '13. 英文畢業門檻（Eagle 系統）檢定成績如何登錄？', a: '考取多益、托福、雅思或英檢後，請將成績單上傳至「外語中心線上認證系統（Eagle Project）」，並攜帶正本至系辦或外語中心查驗即可完成畢業門檻登錄。' },
+            { id: 14, cat: '教務選課', q: '14. 通識學分（踏溯台南、領域通識、融合通識）如何計算？', a: '學士班通識須修滿 28 學分：含大一必修「踏溯台南（1 學分）」、國文（4）、外語（4）、跨三領域通識（14~18）及融合通識（至少 1 學分，可由通識認證講座折抵）。' },
+            { id: 15, cat: '住宿生活', q: '15. 校內心理諮商（心輔組）如何預約？需要付費嗎？', a: '在學學生完全免費且嚴格保密。可透過「心輔組線上初談預約系統」選擇時段，或親洽光復校區雲平大樓東棟 3 樓心輔組。' },
+            { id: 16, cat: '行政獎助', q: '16. 學雜費減免、就學貸款與校內獎助學金去哪裡辦理？', a: '由光復校區雲平大樓西棟 3 樓「生活輔導組（生輔組）」承辦，各類獎學金可直接於首頁或「成大獎學金系統」依系級線上申請。' },
+            { id: 17, cat: '教務選課', q: '17. 如何在「活動資訊系統」報名通識認證講座並取得時數？', a: '點選首頁「活動資訊系統」篩選「通識認證講座」報名。活動當日攜帶學生證刷卡簽到退，會後 7 日內線上填寫心得，集滿 9 場即可折抵融合通識 1 學分。' },
+            { id: 18, cat: '住宿生活', q: '18. 校內健身房、羽球場與游泳池如何借用或購票？', a: '光復校區中正堂（羽球、桌球）與勝利校區新體育館（重訓健身房）享學生優惠價，場地可於「體育室場地系統」線上預約，進入健身房請攜帶學生證與毛巾。' },
+            { id: 19, cat: '網路與IT', q: '19. 學生信箱 @gs.ncku.edu.tw 與 @mail.ncku.edu.tw 差在哪？', a: '「@gs.ncku.edu.tw」為 Google Workspace 教育版信箱（使用 Gmail 介面登入），常用於 Moodle 與雲端協作；「@mail.ncku.edu.tw」為計網中心校內信箱，可設定自動轉信。' },
+            { id: 20, cat: '住宿生活', q: '20. 住宿生網購包裹與掛號信寄到學校要去哪裡領？', a: '地址請填寫「台南市東區大學路1號＋舍別與房號」。包裹抵達後會收到 App 通知與信件，請持學生證至該宿舍區管理室或智慧物流櫃領取。' },
+            { id: 21, cat: '教務選課', q: '21. 剛加選上的課程為什麼還沒出現在 Moodle 平台？', a: '選課系統與 Moodle 每日固定於凌晨批次同步資料。當天加選或加簽登錄之課程，將於「隔日上午」自動出現於 Moodle 課程列表中。' },
+            { id: 22, cat: '行政獎助', q: '22. 校內衛保組（保健室）看診與學生平安保險如何申請理賠？', a: '衛保組位於雲平大樓東棟 1~2 樓，提供外傷處理與駐診醫師諮詢。申請學保醫療理賠請備妥診斷證明書正本、醫療收據及存摺影本至衛保組櫃台辦理。' }
+        ];
+
+        let activeFaqCat = '全部';
+
+        // ==================== 首頁：渲染可客製化常用校園服務 ====================
+        function renderHomeServices() {
+            const grid = document.getElementById('pinnedAppGrid');
+            const pinned = appServices.filter(s => s.pinned);
+
+            let html = pinned.map((svc, idx) => `
+                <div class="relative flex flex-col items-center group ${isJiggleMode ? 'jiggle-mode' : ''}">
+                    ${isJiggleMode ? `
+                        <button onclick="unpinService('${svc.id}')" class="absolute -top-1.5 left-2 w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] flex items-center justify-center shadow-md z-10" title="移除">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <div class="absolute -top-1.5 right-2 flex gap-0.5 z-10">
+                            ${idx > 0 ? `<button onclick="movePinnedService(${idx}, -1)" class="w-4 h-4 rounded-full bg-slate-800 text-white text-[8px] flex items-center justify-center"><i class="fa-solid fa-chevron-left"></i></button>` : ''}
+                            ${idx < pinned.length - 1 ? `<button onclick="movePinnedService(${idx}, 1)" class="w-4 h-4 rounded-full bg-slate-800 text-white text-[8px] flex items-center justify-center"><i class="fa-solid fa-chevron-right"></i></button>` : ''}
+                        </div>
+                    ` : ''}
+                    <button onclick="${isJiggleMode ? `openCustomizeBottomSheet()` : `handleServiceTap('${svc.id}')`}" class="w-[52px] h-[52px] rounded-[18px] ${svc.bg} ${svc.color} flex items-center justify-center shadow-xs border border-black/[0.04] ios-tap transition">
+                        ${getServiceIconHtml(svc, 'text-lg')}
+                    </button>
+                    <span class="text-[11px] font-bold text-slate-700 mt-1.5 leading-tight line-clamp-1">${svc.name}</span>
+                </div>
+            `).join('');
+
+            // 最末格固定提供「+ 調整」捷徑按鈕
+            html += `
+                <div class="flex flex-col items-center">
+                    <button onclick="openCustomizeBottomSheet()" class="w-[52px] h-[52px] rounded-[18px] bg-slate-50 border-2 border-dashed border-slate-300 text-slate-400 hover:border-ncku hover:text-ncku flex items-center justify-center ios-tap transition">
+                        <i class="fa-solid fa-plus text-base"></i>
+                    </button>
+                    <span class="text-[11px] font-semibold text-slate-400 mt-1.5">新增/調整</span>
+                </div>
+            `;
+
+            grid.innerHTML = html;
+        }
+
+        function toggleHomeJiggleEdit() {
+            isJiggleMode = !isJiggleMode;
+            const btn = document.getElementById('jiggleEditBtn');
+            const banner = document.getElementById('jiggleModeBanner');
+
+            if (isJiggleMode) {
+                btn.className = 'px-2.5 py-1.5 rounded-full bg-ncku text-white font-bold text-[11px] flex items-center gap-1 ios-tap transition';
+                btn.innerHTML = '<i class="fa-solid fa-check text-[10px]"></i><span>完成</span>';
+                banner.classList.remove('hidden');
+            } else {
+                btn.className = 'px-2.5 py-1.5 rounded-full bg-rose-50 text-ncku font-bold text-[11px] flex items-center gap-1 ios-tap transition';
+                btn.innerHTML = '<i class="fa-solid fa-sliders text-[10px]"></i><span>客製化</span>';
+                banner.classList.add('hidden');
+            }
+            renderHomeServices();
+        }
+
+        function unpinService(id) {
+            const pinnedCount = appServices.filter(s => s.pinned).length;
+            if (pinnedCount <= 1) {
+                showToast('首頁請至少保留 1 項常用校園服務');
+                return;
+            }
+            const item = appServices.find(s => s.id === id);
+            if (item) {
+                item.pinned = false;
+                renderHomeServices();
+                renderCustomizeSheetLists();
+                showToast(`已從首頁移除「${item.name}」`);
+            }
+        }
+
+        function pinService(id) {
+            const item = appServices.find(s => s.id === id);
+            if (item) {
+                item.pinned = true;
+                renderHomeServices();
+                renderCustomizeSheetLists();
+                showToast(`已將「${item.name}」加入首頁`);
+            }
+        }
+
+        function movePinnedService(pinnedIdx, dir) {
+            const pinned = appServices.filter(s => s.pinned);
+            const targetIdx = pinnedIdx + dir;
+            if (targetIdx < 0 || targetIdx >= pinned.length) return;
+
+            const idxA = appServices.findIndex(s => s.id === pinned[pinnedIdx].id);
+            const idxB = appServices.findIndex(s => s.id === pinned[targetIdx].id);
+            const temp = appServices[idxA];
+            appServices[idxA] = appServices[idxB];
+            appServices[idxB] = temp;
+
+            renderHomeServices();
+            renderCustomizeSheetLists();
+        }
+
+        function addCustomUserService() {
+            const input = document.getElementById('customSvcInput');
+            const name = input.value.trim();
+            if (!name) {
+                showToast('請輸入自訂服務名稱');
+                return;
+            }
+            appServices.push({
+                id: 'custom_' + Date.now(),
+                name: name,
+                icon: 'fa-star',
+                bg: 'bg-rose-50',
+                color: 'text-ncku',
+                desc: '學生個人自訂校園服務捷徑',
+                pinned: true
+            });
+            input.value = '';
+            renderHomeServices();
+            renderCustomizeSheetLists();
+            showToast(`已新增並釘選「${name}」`);
+        }
+
+        function resetDefaultServices() {
+            appServices = JSON.parse(JSON.stringify(defaultServices));
+            renderHomeServices();
+            renderCustomizeSheetLists();
+            showToast('已還原預設常用校園服務');
+        }
+
+        function openCustomizeBottomSheet() {
+            renderCustomizeSheetLists();
+            document.getElementById('customizeSheet').classList.remove('hidden');
+        }
+
+        function renderCustomizeSheetLists() {
+            const pinned = appServices.filter(s => s.pinned);
+            const unpinned = appServices.filter(s => !s.pinned);
+
+            document.getElementById('sheetPinnedCount').textContent = pinned.length;
+
+            document.getElementById('sheetPinnedList').innerHTML = pinned.map((s, idx) => `
+                <div class="p-2 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl ${s.bg} ${s.color} flex items-center justify-center">
+                            ${getServiceIconHtml(s, 'text-xs')}
+                        </div>
+                        <div>
+                            <span class="text-xs font-extrabold text-slate-800">${s.name}</span>
+                            <p class="text-[10px] text-slate-400">${s.desc}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="movePinnedService(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-30 w-6 h-6"' : 'class="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-600 text-[10px]"'}><i class="fa-solid fa-arrow-up"></i></button>
+                        <button onclick="movePinnedService(${idx}, 1)" ${idx === pinned.length - 1 ? 'disabled class="opacity-30 w-6 h-6"' : 'class="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-600 text-[10px]"'}><i class="fa-solid fa-arrow-down"></i></button>
+                        <button onclick="unpinService('${s.id}')" class="px-2 py-1 rounded-lg bg-rose-50 text-rose-600 font-bold text-[10px] ml-1">移除</button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('sheetAvailableList').innerHTML = unpinned.length === 0
+                ? `<p class="col-span-2 text-[11px] text-slate-400 text-center py-2">所有服務皆已加入首頁</p>`
+                : unpinned.map(s => `
+                    <div class="p-2 rounded-2xl border border-slate-200 flex items-center justify-between">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-7 h-7 rounded-xl ${s.bg} ${s.color} flex items-center justify-center shrink-0">
+                                ${getServiceIconHtml(s, 'text-xs')}
+                            </div>
+                            <span class="text-xs font-bold text-slate-700 truncate">${s.name}</span>
+                        </div>
+                        <button onclick="pinService('${s.id}')" class="px-2 py-1 rounded-lg bg-ncku text-white text-[10px] font-bold shrink-0">+ 加入</button>
+                    </div>
+                `).join('');
+        }
+
+        // 點擊首頁服務圖示的導向與原生 Bottom Sheet 預覽
+        function handleServiceTap(serviceId) {
+            if (serviceId === 'timetable') {
+                switchTab('academic');
+                return;
+            }
+            if (serviceId === 'map') {
+                switchTab('services');
+                switchCampusMode('map');
+                return;
+            }
+            if (serviceId === 'library' || serviceId === 'food') {
+                switchTab('services');
+                switchCampusMode('live');
+                return;
+            }
+            openServiceSheet(serviceId);
+        }
+
+        function openServiceSheet(serviceId) {
+            const svc = appServices.find(s => s.id === serviceId) || {
+                id: 'event_system',
+                name: '活動資訊系統',
+                icon: 'fa-calendar-check',
+                bg: 'bg-purple-50',
+                color: 'text-purple-600',
+                desc: '全校演講、通識認證講座與工作坊報名'
+            };
+
+            const iconEl = document.getElementById('sheetSvcIcon');
+            iconEl.className = `w-9 h-9 rounded-2xl ${svc.bg} ${svc.color} flex items-center justify-center`;
+            iconEl.innerHTML = getServiceIconHtml(svc, 'text-base');
+            document.getElementById('sheetSvcTitle').textContent = svc.name;
+            document.getElementById('sheetSvcSub').textContent = svc.desc;
+
+            const body = document.getElementById('sheetSvcBody');
+
+            if (serviceId === 'event_system') {
+                body.innerHTML = `
+                    <div class="p-3 rounded-2xl bg-purple-50 border border-purple-200/80 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold text-purple-700 uppercase">NCKU Activity System</span>
+                            <h4 class="text-xs font-extrabold text-slate-800 mt-0.5">成大全校活動資訊系統</h4>
+                        </div>
+                        <span class="text-[10px] font-bold bg-white text-purple-700 px-2.5 py-1 rounded-full border border-purple-200">已報名 2 場</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-bold bg-ncku text-white px-2 py-0.5 rounded">通識認證講座</span>
+                                <span class="text-[10px] text-emerald-600 font-bold">名額尚有 24 人</span>
+                            </div>
+                            <h5 class="text-xs font-extrabold text-slate-800">生成式 AI 與智慧醫療跨域創新論壇</h5>
+                            <p class="text-[11px] text-slate-500"><i class="fa-regular fa-clock mr-1"></i>週四 14:10 - 16:00 · 成杏校區 醫學院第三講堂</p>
+                            <button onclick="showToast('已於活動資訊系統完成線上報名！'); closeSheet('servicePreviewSheet');" class="w-full mt-1 py-2 bg-ncku text-white rounded-xl font-bold text-xs ios-tap">一鍵線上報名</button>
+                        </div>
+                        <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded">職涯工作坊</span>
+                                <span class="text-[10px] text-amber-600 font-bold">剩餘 9 名額</span>
+                            </div>
+                            <h5 class="text-xs font-extrabold text-slate-800">半導體與韌體工程師英文履歷健檢營</h5>
+                            <p class="text-[11px] text-slate-500"><i class="fa-regular fa-clock mr-1"></i>週五 13:30 - 16:30 · 光復校區 雲平東棟 4F</p>
+                            <button onclick="showToast('已於活動資訊系統完成線上報名！'); closeSheet('servicePreviewSheet');" class="w-full mt-1 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs ios-tap">一鍵線上報名</button>
+                        </div>
+                    </div>
+                `;
+            } else if (serviceId === 'grades') {
+                body.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2 text-center">
+                        <div class="p-3 rounded-2xl bg-rose-50 border border-rose-200">
+                            <span class="text-[10px] text-slate-500">本學期平均 GPA</span>
+                            <p class="text-lg font-black text-ncku mt-0.5">4.12 / 4.30</p>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-slate-100 border border-slate-200">
+                            <span class="text-[10px] text-slate-500">班級累計排名</span>
+                            <p class="text-lg font-black text-slate-800 mt-0.5">4 / 58 (Top 7%)</p>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="font-bold text-slate-800">演算法設計與分析</span><span class="font-extrabold text-emerald-600">A+ (95)</span></div>
+                        <div class="flex justify-between text-xs"><span class="font-bold text-slate-800">線性代數</span><span class="font-extrabold text-emerald-600">A (88)</span></div>
+                        <div class="flex justify-between text-xs"><span class="font-bold text-slate-800">數位系統導論</span><span class="font-extrabold text-emerald-600">A+ (92)</span></div>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = `
+                    <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-800">單一簽入狀態</span>
+                            <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">王成功 (F74123456) 已驗證</span>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">您正在使用「${svc.name}」行動快速介面，所有紀錄將即時與成大計網中心校務資料庫同步。</p>
+                    </div>
+                    <button onclick="showToast('已同步「${svc.name}」最新資料'); closeSheet('servicePreviewSheet');" class="w-full py-2.5 bg-ncku text-white rounded-2xl font-bold text-xs ios-tap">重新整理資料</button>
+                `;
+            }
+
+            document.getElementById('servicePreviewSheet').classList.remove('hidden');
+        }
+
+        function closeSheet(sheetId) {
+            document.getElementById(sheetId).classList.add('hidden');
+        }
+
+        // ==================== 課表分頁：渲染一週五天第 1~9 節完整課表（無進入課程按鈕） ====================
+        function renderWeeklySchedule() {
+            const tbody = document.getElementById('mobileTimetableGrid');
+            let html = '';
+
+            periodSlots.forEach(slot => {
+                let rowCells = `
+                    <td class="py-1.5 px-0.5 bg-slate-50 border-r border-slate-200">
+                        <div class="text-[10px] font-extrabold text-slate-700">${slot.p}</div>
+                        <div class="text-[8px] text-slate-400 font-mono">${slot.time}</div>
+                    </td>
+                `;
+
+                for (let day = 1; day <= 5; day++) {
+                    const course = weeklyCourses.find(c => c.cells.some(cell => cell.d === day && cell.p === slot.p));
+                    if (course) {
+                        rowCells += `
+                            <td onclick="selectCourseOnTimetable('${course.id}')" class="p-0.5 border-r border-slate-100 last:border-r-0 align-top cursor-pointer">
+                                <div class="w-full min-h-[40px] rounded-lg border p-1 flex flex-col justify-between ${course.style} ios-tap transition">
+                                    <span class="font-extrabold text-[9.5px] leading-tight line-clamp-2">${course.short}</span>
+                                    <span class="text-[8px] font-mono opacity-85 mt-0.5">${course.code}</span>
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        rowCells += `<td class="p-0.5 border-r border-slate-100 last:border-r-0 bg-white"></td>`;
+                    }
+                }
+                html += `<tr>${rowCells}</tr>`;
+            });
+
+            tbody.innerHTML = html;
+
+            // 渲染下方修課清單（純資訊，不放置任何「進入課程」按鈕）
+            document.getElementById('mobileCourseList').innerHTML = weeklyCourses.map(c => `
+                <div onclick="selectCourseOnTimetable('${c.id}')" class="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/60 flex items-center justify-between ios-tap cursor-pointer transition">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-extrabold text-slate-800">${c.name}</span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-white border border-slate-200 text-slate-600">${c.type}</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-0.5">${c.timeText} · ${c.room} · ${c.teacher}</p>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold text-ncku bg-rose-50 px-2 py-0.5 rounded-lg shrink-0">${c.code}</span>
+                </div>
+            `).join('');
+        }
+
+        function selectCourseOnTimetable(courseId) {
+            const c = weeklyCourses.find(item => item.id === courseId);
+            if (!c) return;
+            document.getElementById('ttCourseType').textContent = c.type;
+            document.getElementById('ttCourseTitle').textContent = c.name;
+            document.getElementById('ttCourseInfo').innerHTML = `<i class="fa-solid fa-location-dot text-ncku mr-1"></i>${c.room} · ${c.teacher} · ${c.timeText}`;
+            showToast(`${c.name}（教室：${c.room}）`);
+        }
+
+        // ==================== 校園分頁：雙區塊切換 (1.校區地圖與Wi-Fi / 2.自修室與學餐販賣機) ====================
+        function switchCampusMode(mode) {
+            const mapPanel = document.getElementById('campusPanel-map');
+            const livePanel = document.getElementById('campusPanel-live');
+            const mapBtn = document.getElementById('campusSegBtn-map');
+            const liveBtn = document.getElementById('campusSegBtn-live');
+
+            if (mode === 'map') {
+                mapPanel.classList.remove('hidden');
+                livePanel.classList.add('hidden');
+                mapBtn.className = 'py-2 px-2 rounded-xl text-[11px] font-extrabold bg-white text-ncku shadow-xs transition flex items-center justify-center gap-1.5 ios-tap';
+                liveBtn.className = 'py-2 px-2 rounded-xl text-[11px] font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 ios-tap';
+            } else {
+                mapPanel.classList.add('hidden');
+                livePanel.classList.remove('hidden');
+                liveBtn.className = 'py-2 px-2 rounded-xl text-[11px] font-extrabold bg-white text-ncku shadow-xs transition flex items-center justify-center gap-1.5 ios-tap';
+                mapBtn.className = 'py-2 px-2 rounded-xl text-[11px] font-bold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1.5 ios-tap';
+                renderLiveCampusSection();
+            }
+        }
+
+        function selectCampusOnMap(key) {
+            const info = campusData[key];
+            if (!info) return;
+
+            Object.keys(campusData).forEach(k => {
+                const btn = document.getElementById(`pin-${k}`);
+                if (!btn) return;
+                const spans = btn.querySelectorAll('span');
+                if (k === key) {
+                    btn.classList.remove('bg-white/95', 'border-slate-300');
+                    btn.classList.add('bg-ncku', 'text-white', 'border-2', 'border-amber-300', 'shadow-md');
+                    if (spans[0]) spans[0].className = 'text-xs font-extrabold text-white';
+                } else {
+                    btn.classList.remove('bg-ncku', 'text-white', 'border-2', 'border-amber-300', 'shadow-md');
+                    btn.classList.add('bg-white/95', 'border-slate-300');
+                    if (spans[0]) spans[0].className = 'text-xs font-extrabold text-slate-700';
+                }
+            });
+
+            document.getElementById('selectedCampusPill').textContent = info.name;
+            document.getElementById('campusClassroomTitle').innerHTML = `<i class="fa-solid fa-building-columns text-ncku"></i><span>${info.name}：系館教室資訊</span>`;
+            document.getElementById('campusCodeTag').textContent = info.codeTag;
+
+            document.getElementById('campusBuildingList').innerHTML = info.buildings.map(b => `
+                <div class="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-start justify-between gap-2">
+                    <div>
+                        <h5 class="text-xs font-extrabold text-slate-800">${b.bName}</h5>
+                        <p class="text-[10px] text-slate-500 mt-0.5"><i class="fa-solid fa-door-open text-slate-400 mr-1"></i>${b.rooms}</p>
+                    </div>
+                    <span class="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-lg shrink-0">${b.status}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderLiveCampusSection() {
+            // 1. 自修室與圖書館即時人數
+            document.getElementById('liveStudyRoomsContainer').innerHTML = studyRoomsState.map(r => {
+                const pct = Math.min(100, Math.round((r.cur / r.max) * 100));
+                let barColor = 'bg-emerald-500';
+                let badge = '空位充足';
+                let badgeStyle = 'bg-emerald-100 text-emerald-800';
+                if (pct >= 80) {
+                    barColor = 'bg-rose-500';
+                    badge = '座位擁擠';
+                    badgeStyle = 'bg-rose-100 text-rose-800';
+                } else if (pct >= 55) {
+                    barColor = 'bg-amber-500';
+                    badge = '人潮適中';
+                    badgeStyle = 'bg-amber-100 text-amber-900';
+                }
+
+                return `
+                    <div class="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs font-extrabold text-slate-800">${r.name}</span>
+                                <span class="text-[9px] bg-white border border-slate-200 text-slate-500 px-1.5 py-0.2 rounded">${r.area}</span>
+                            </div>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${badgeStyle}">${badge}</span>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-600">
+                            <span>目前人數：<strong class="font-mono text-slate-900">${r.cur}</strong> / ${r.max} 席 (${pct}%)</span>
+                            <span class="text-slate-400">${r.hours}</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div class="h-full ${barColor} rounded-full transition-all duration-300" style="width:${pct}%"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-500">${r.info}</p>
+                    </div>
+                `;
+            }).join('');
+
+            // 2. 學餐即時情況
+            document.getElementById('liveCafeteriaContainer').innerHTML = cafeteriasState.map(c => `
+                <div class="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-slate-800">${c.name}</span>
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${c.badge}">${c.status}</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500">${c.detail}</p>
+                </div>
+            `).join('');
+
+            // 3. 販賣機即時情況
+            document.getElementById('liveVendingContainer').innerHTML = vendingState.map(v => `
+                <div class="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-start justify-between gap-2">
+                    <div>
+                        <h5 class="text-xs font-extrabold text-slate-800">${v.name}</h5>
+                        <p class="text-[10px] text-slate-500 mt-0.5">${v.detail}</p>
+                    </div>
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-lg shrink-0 ${v.badge}">${v.status}</span>
+                </div>
+            `).join('');
+        }
+
+        function refreshLiveCampusData() {
+            studyRoomsState = studyRoomsState.map(r => {
+                const delta = Math.floor(Math.random() * 9) - 4;
+                return { ...r, cur: Math.max(12, Math.min(r.max - 4, r.cur + delta)) };
+            });
+            renderLiveCampusSection();
+            showToast('已同步自修室、圖書館與學餐最新人數');
+        }
+
+        // ==================== 我的分頁：渲染 22 題學生常見問題 (FAQ) ====================
+        function renderFaqCategories() {
+            const cats = ['全部', '教務選課', '圖書自修', '網路與IT', '住宿生活', '行政獎助'];
+            document.getElementById('faqCatContainer').innerHTML = cats.map(c => `
+                <button onclick="setFaqCat('${c}')" class="px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0 ios-tap transition ${activeFaqCat === c ? 'bg-ncku text-white' : 'bg-slate-100 text-slate-600'}">
+                    ${c}
+                </button>
+            `).join('');
+        }
+
+        function setFaqCat(cat) {
+            activeFaqCat = cat;
+            renderFaqCategories();
+            renderFaqList();
+        }
+
+        function renderFaqList() {
+            const kw = (document.getElementById('faqSearchInput')?.value || '').trim().toLowerCase();
+            const filtered = studentFaqs.filter(item => {
+                const cMatch = activeFaqCat === '全部' || item.cat === activeFaqCat;
+                const kMatch = !kw || item.q.toLowerCase().includes(kw) || item.a.toLowerCase().includes(kw);
+                return cMatch && kMatch;
+            });
+
+            const container = document.getElementById('faqListContainer');
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">找不到相符的問題，請嘗試其他關鍵字</p>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => `
+                <div class="rounded-2xl border border-slate-200/80 bg-slate-50/70 overflow-hidden">
+                    <button onclick="toggleFaqItem(${item.id})" class="w-full px-3 py-2.5 text-left flex items-start justify-between gap-2 ios-tap">
+                        <div>
+                            <span class="inline-block text-[9px] font-bold text-ncku bg-rose-50 border border-rose-200/60 px-1.5 py-0.2 rounded mb-0.5">${item.cat}</span>
+                            <h4 class="text-xs font-extrabold text-slate-800 leading-snug">${item.q}</h4>
+                        </div>
+                        <i id="faqChev-${item.id}" class="fa-solid fa-chevron-down text-[10px] text-slate-400 mt-1 transition-transform"></i>
+                    </button>
+                    <div id="faqAns-${item.id}" class="hidden px-3 pb-3 pt-1.5 text-[11px] text-slate-600 leading-relaxed bg-white border-t border-slate-100">
+                        ${item.a}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleFaqItem(id) {
+            const ans = document.getElementById(`faqAns-${id}`);
+            const chev = document.getElementById(`faqChev-${id}`);
+            if (!ans) return;
+            ans.classList.toggle('hidden');
+            if (chev) chev.classList.toggle('rotate-180');
+        }
+
+        let allFaqOpen = false;
+        function toggleExpandAllFaq() {
+            allFaqOpen = !allFaqOpen;
+            studentFaqs.forEach(item => {
+                const ans = document.getElementById(`faqAns-${item.id}`);
+                const chev = document.getElementById(`faqChev-${item.id}`);
+                if (ans) {
+                    if (allFaqOpen) {
+                        ans.classList.remove('hidden');
+                        if (chev) chev.classList.add('rotate-180');
+                    } else {
+                        ans.classList.add('hidden');
+                        if (chev) chev.classList.remove('rotate-180');
+                    }
+                }
+            });
+            document.getElementById('expandAllFaqBtn').textContent = allFaqOpen ? '全部收合' : '全部展開';
+        }
+
+        function scrollToFaqSection() {
+            const el = document.getElementById('studentFaqCard');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ==================== 手機底部分頁切換、動態島與輔助功能 ====================
+        function switchTab(tabKey) {
+            document.querySelectorAll('.tab-view').forEach(s => s.classList.add('hidden'));
+            const target = document.getElementById(`tab-${tabKey}`);
+            if (target) target.classList.remove('hidden');
+
+            const titles = {
+                home: ['成功大學行動校園', 'National Cheng Kung University'],
+                academic: ['一週課程時間表', '115 學年度第 1 學期 · 18 學分'],
+                services: ['成大校園地圖與動態', '教室 Wi-Fi · 自修室 · 學餐販賣機'],
+                messages: ['個人推播通知', 'Moodle · 活動系統 · 圖書館提醒'],
+                profile: ['我的學生檔案與 FAQ', 'F74123456 · 22 項常見問題解答']
+            };
+
+            if (titles[tabKey]) {
+                document.getElementById('appNavTitle').textContent = titles[tabKey][0];
+                document.getElementById('appNavSubtitle').textContent = titles[tabKey][1];
+            }
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-ncku');
+                btn.classList.add('text-slate-400');
+            });
+            const activeBtn = document.getElementById(`nav-${tabKey}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('text-ncku');
+            }
+
+            document.getElementById('phoneViewport').scrollTop = 0;
+        }
+
+        function triggerDynamicIsland(message, iconClass) {
+            const island = document.getElementById('dynamicIsland');
+            const text = document.getElementById('islandText');
+            island.classList.add('scale-105', 'bg-slate-950');
+            text.innerHTML = `<i class="fa-solid ${iconClass} mr-1"></i>${message}`;
+            showToast(message);
+            setTimeout(() => {
+                island.classList.remove('scale-105', 'bg-slate-950');
+                text.textContent = 'NCKU 學生端';
+            }, 3200);
+        }
+
+        function copyToClipboard(text, msg) {
+            const input = document.createElement('textarea');
+            input.value = text;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            showToast(msg);
+        }
+
+        let toastTimer = null;
+        function showToast(msg) {
+            const toast = document.getElementById('phoneToast');
+            document.getElementById('phoneToastText').textContent = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2300);
+        }
+
+        function resetApp() {
+            isJiggleMode = false;
+            closeSheet('customizeSheet');
+            closeSheet('servicePreviewSheet');
+            switchTab('home');
+            renderHomeServices();
+            showToast('已回到成大 App 首頁');
+        }
+
+        function updateStatusBarClock() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('iosStatusBarClock').textContent = `${hh}:${mm}`;
+        }
+
+        window.onload = function() {
+            updateStatusBarClock();
+            setInterval(updateStatusBarClock, 20000);
+            renderHomeServices();
+            renderWeeklySchedule();
+            selectCampusOnMap('chengkung');
+            renderLiveCampusSection();
+            renderFaqCategories();
+            renderFaqList();
+        };
+    </script>
+</body>
+</html>
